@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import librosa
 import pathlib
+import numpy as np
 
 from pdb import set_trace as BP
 
@@ -56,6 +58,46 @@ def glob_music_files(input_pathes):
 	return ret
 
 
+def extract_music_features(music_file, librosa_opts):
+	y, sr = librosa.load(music_file)
+
+	tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+
+	beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+
+	y_harmonic, y_percussive = librosa.effects.hpss(y)
+
+	mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=512, n_mfcc=13)
+
+	mfcc_delta = librosa.feature.delta(mfcc)
+
+	beat_mfcc_delta = librosa.util.sync(
+		np.vstack([mfcc, mfcc_delta]), beat_frames
+	)
+
+	chromagram = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr)
+
+	beat_chroma = librosa.util.sync(chromagram, beat_frames, aggregate=np.median)
+
+	beat_feature = np.vstack([beat_chroma, beat_mfcc_delta])
+
+	return {
+		'y' : y,
+		'sr' : sr,
+		'tempo' : tempo,
+		'beat_frames' : beat_frames,
+		'beat_times' : beat_times,
+		'y_harmonic' : y_harmonic,
+		'y_percussive' : y_percussive,
+		'mfcc' : mfcc,
+		'mfcc_delta' : mfcc_delta,
+		'beat_mfcc_delta' : beat_mfcc_delta,
+		'chromagram' : chromagram,
+		'beat_chroma' : beat_chroma,
+		'beat_feature' : beat_feature
+	}
+
+
 if __name__ == "__main__":
 	import argparse
 
@@ -82,5 +124,10 @@ if __name__ == "__main__":
 
 	args.input_pathes = glob_music_files(args.input_pathes)
 
-	print(args)
-	BP()
+	music_features = dict()
+
+	for music_file in args.input_pathes:
+		m_features = extract_music_features(music_file, None)
+
+		music_features.update({ music_file : m_features })
+		BP()
