@@ -3,6 +3,7 @@
 import librosa
 import pathlib
 import numpy as np
+from typing import List
 
 from pdb import set_trace as BP
 
@@ -28,11 +29,11 @@ __doc__ = \
 ##################
 
 
-def glob_music_files(input_pathes):
+def glob_music_files(input_pathes: List[pathlib.Path]) -> List[pathlib.Path]:
 	"""
 	If the 'input_pathes' list contains folders, these folders will recursively
 	searched for all supported formats: '[ {} ]'
-	""".format(", ".join(supported_formats()))
+	"""
 
 	ret = set()
 
@@ -58,7 +59,12 @@ def glob_music_files(input_pathes):
 	return ret
 
 
-def extract_music_features(music_file, librosa_opts):
+glob_music_files.__doc__ = glob_music_files.__doc__.format(
+	", ".join(supported_formats())
+)
+
+
+def extract_music_features(music_file: pathlib.Path):
 	y, sr = librosa.load(music_file)
 
 	tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
@@ -100,9 +106,7 @@ def extract_music_features(music_file, librosa_opts):
 
 if __name__ == "__main__":
 	import argparse
-
 	arg_parser = argparse.ArgumentParser(description=__doc__)
-
 	for arg in [
 		( "-i", {
 			"dest" : "input_pathes",
@@ -119,15 +123,31 @@ if __name__ == "__main__":
 		}),
 	]:
 		arg_parser.add_argument(arg[0], **arg[1])
-
 	args = arg_parser.parse_args()
 
+
+	# clean/process/check the input args
 	args.input_pathes = glob_music_files(args.input_pathes)
 
+	if not args.output_path.exists():
+		raise ValueError(f"'{args.output_path}' ouput path does't exist.")
+
+
+	# extract features
 	music_features = dict()
 
 	for music_file in args.input_pathes:
-		m_features = extract_music_features(music_file, None)
+		m_features = extract_music_features(music_file)
 
 		music_features.update({ music_file : m_features })
 		BP()
+
+
+	# write features to disk
+
+
+
+
+
+
+# TODO: args: --reset --librosa-opts
