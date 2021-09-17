@@ -3,6 +3,8 @@
 import librosa
 import pathlib
 import numpy as np
+import matplotlib.pyplot as plt
+import librosa.display
 from typing import List
 
 from pdb import set_trace as BP
@@ -104,6 +106,26 @@ def extract_music_features(music_file: pathlib.Path):
 	}
 
 
+def store_music_features(
+	music_file_name,
+	music_features,
+	output_path: pathlib.Path
+):
+	for ft_name, feat in (
+		(n, f) for n, f in music_features.items() if isinstance(f, np.ndarray)
+	):
+		try:
+			fig, ax = plt.subplots()
+			librosa.display.specshow(feat, ax=ax)
+			fig.savefig(music_file.name + f".{ft_name}.png")
+			plt.close(fig)
+		except Exception as e:
+			print("EXCEPTION:", e)
+			e.args = (*e.args, f"Failed to write feature: '{fname}'" )
+			#BP()
+			#raise
+
+
 if __name__ == "__main__":
 	import argparse
 	arg_parser = argparse.ArgumentParser(description=__doc__)
@@ -133,19 +155,22 @@ if __name__ == "__main__":
 		raise ValueError(f"'{args.output_path}' ouput path does't exist.")
 
 
-	# extract features
+	print("Reading music features ...")
 	music_features = dict()
 
 	for music_file in args.input_pathes:
+		print(f"Music file: '{music_file.name}'")
+
 		m_features = extract_music_features(music_file)
 
 		music_features.update({ music_file : m_features })
-		BP()
 
 
-	# write features to disk
+	print("Writing music features ...")
+	for fname, features in music_features.items():
+		store_music_features(fname, features, args.output_path)
 
-
+	BP()
 
 
 
