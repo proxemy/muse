@@ -37,24 +37,29 @@ class MFExtractor:
 	This class is a stateful wrapper around the libroa API.
 	It laods a single music file.
 	"""
-	def __init__(self, file_path: pathlib.Path):
+	def __init__(
+		self,
+		file_path: pathlib.Path,
+		sample_rate=22050,
+		hop_length=512,
+		n_mfcc=13
+	):
 		self.file_path = file_path
+		self.sample_rate = sample_rate
+		self.hop_length = hop_length
+		self.n_mfcc = n_mfcc
 
 	@cached_property
-	def y_sr(self):
-		return librosa.load(self.file_path)
+	def signal_sr(self):
+		return librosa.load(self.file_path, self.sample_rate)
 
 	@property
-	def y(self):
-		return self.y_sr[0]
-
-	@property
-	def sr(self):
-		return self.y_sr[1]
+	def signal(self):
+		return self.signal_sr[0]
 
 	@cached_property
 	def tempo_beat_frames(self):
-		return librosa.beat.beat_track(y=self.y, sr=self.sr)
+		return librosa.beat.beat_track(y=self.signal, sr=self.sample_rate)
 
 	@property
 	def tempo(self):
@@ -66,7 +71,7 @@ class MFExtractor:
 
 	@cached_property
 	def y_harmonic_y_percussive(self):
-		return librosa.effects.hpps(self.y)
+		return librosa.effects.hpss(self.signal)
 
 	@property
 	def y_harmonic(self):
@@ -78,11 +83,15 @@ class MFExtractor:
 
 	@cached_property
 	def beat_times(self):
-		return librosa.frames_to_time(self.beat_frames, self.sr)
+		return librosa.frames_to_time(self.beat_frames, self.sample_rate)
 
 	@cached_property
 	def mfcc(self):
-		return librosa.feature.mfcc(y=self.y, sr=self.sr)
+		return librosa.feature.mfcc(
+			y=self.signal,
+			sr=self.sample_rate,
+			n_mfcc=self.n_mfcc
+		)
 
 	@cached_property
 	def mfcc_delta(self):
@@ -90,7 +99,7 @@ class MFExtractor:
 
 	@cached_property
 	def chromagram(self):
-		return librosa.feature.chroma_ctq(y=self.y_harmonic, sr=self.sr)
+		return librosa.feature.chroma_cqt(y=self.y_harmonic, sr=self.sample_rate)
 
 	@cached_property
 	def beat_chroma(self):
@@ -103,6 +112,63 @@ class MFExtractor:
 	@cached_property
 	def beat_feature(self):
 		return np.vstack([self.beat_chroma, self.beat_mfcc_delta])
+
+	@cached_property
+	def short_time_fourier_transform(self):
+		return librosa.stft(self.signal, hop_length=self.hop_length)
+
+	@cached_property
+	def spectrum(self):
+		return np.abs(self.short_time_fourier_transform)
+
+	@cached_property
+	def log_spectrum(self):
+		return librosa.amplitude_to_db(self.spectrum)
+
+
+	# Visualization part
+
+
+	@cached_property
+	def waveform(self, alpha=0.4):
+		return librosa.display.waveplot(self.signal, self.sample_rate, alpha)
+
+	@cached_property
+	def spectrogram(self):
+		return librosa.display.specshow(
+			self.spectrum,
+			sr=self.sample_rate,
+			hop_length=self.hop_length
+		)
+
+	@cached_property
+	def log_spectrogram(self):
+		return librosa.display.specshow(
+			self.log_spectrum,
+			sr=self.sample_rate,
+			hop_length=self.hop_length
+		)
+
+	@cached_property
+	def viterbi(self):
+		return librosa.display.specshow(
+			librosa.amplitude_to_db(
+				librosa.magphase(self.short_time_fourier_transform)[0],
+				ref=np.max
+			),
+			sr=self.sample_rate
+		)
+
+	def __iter__(self):
+		for x in (
+			# name					function
+			#("waveform",			self.waveform),
+			#("spectrogram",		self.spectrogram),
+			("log_spectrogram",		self.log_spectrogram),
+			("beat_chroma",			self.beat_chroma),
+			("viterbi",				self.viterbi),
+		):
+			yield x
 
 
 def glob_music_files(input_pathes: List[pathlib.Path]) -> List[pathlib.Path]:
@@ -141,16 +207,18 @@ glob_music_files.__doc__ = glob_music_files.__doc__.format(
 
 
 def store_music_features(music_extractor, output_path: pathlib.Path):
-	BP()
-	for ft_name, feat in music_extractor:
+	mfile_name = music_extractor.file_path.name
+	for ft_name, feature in music_extractor:
 		try:
 			fig, ax = plt.subplots()
-			librosa.display.specshow(feat, ax=ax)
-			fig.savefig(music_extractor.name + f".{ft_name}.png")
+			librosa.display.specshow(feature, ax=ax)
+			fig.savefig(mfile_name + f"_{ft_name}.png")
 			plt.close(fig)
 		except Exception as e:
-			print("EXCEPTION:", e, ft_name, type(feat))
-			e.args = (*e.args, f"Failed to write feature: '{ft_name}'" )
+			print("EXCEPTION:", e, ft_name)
+			e.args = (*e.args, f"Failed to write feature: '{feature}'" )
+			BP()
+			#raise
 
 
 if __name__ == "__main__":
