@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import librosa.display
 from typing import List
+from cached_property import cached_property
 
 from pdb import set_trace as BP
 
@@ -29,6 +30,79 @@ __doc__ = \
 ##################
 # business logic #
 ##################
+
+
+class MFExtractor:
+	"""
+	This class is a stateful wrapper around the libroa API.
+	It laods a single music file.
+	"""
+	def __init__(self, file_path: pathlib.Path):
+		self.file_path = file_path
+
+	@cached_property
+	def y_sr(self):
+		return librosa.load(self.fpath)
+
+	@property
+	def y(self):
+		return self.y_sr[0]
+
+	@property
+	def sr(self):
+		return self.y_sr[1]
+
+	@cached_property
+	def tempo_beat_frames(self):
+		return librosa.beat.beat_track(y=self.y, sr=self.sr)
+
+	@property
+	def tempo(self):
+		return self.tempo_beat_frames[0]
+
+	@property
+	def beat_frames(self):
+		return self.tempo_beat_frames[1]
+
+	@cached_property
+	def y_harmonic_y_percussive(self):
+		return librosa.effects.hpps(self.y)
+
+	@property
+	def y_harmonic(self):
+		return self.y_harmonic_y_percussive[0]
+
+	@property
+	def y_percussive(self):
+		return self.y_harmonic_y_percussive[1]
+
+	@cached_property
+	def beat_times(self):
+		return librosa.frames_to_time(self.beat_frames, self.sr)
+
+	@cached_property
+	def mfcc(self):
+		return librosa.feature.mfcc(y=self.y, sr=self.sr)
+
+	@cached_property
+	def mfcc_delta(self):
+		return librosa.feature.delta(self.mfcc)
+
+	@cached_property
+	def chromagram(self):
+		return librosa.feature.chroma_ctq(y=self.y_harmonic, sr=self.sr)
+
+	@cached_property
+	def beat_chroma(self):
+		return librosa.util.sync(
+			self.chromagram,
+			self.beat_frames,
+			aggregate=np.median
+		)
+
+	@cached_property
+	def beat_feature(self):
+		return np.vstack([self.beat_chroma, self.beat_mfcc_delta])
 
 
 def glob_music_files(input_pathes: List[pathlib.Path]) -> List[pathlib.Path]:
