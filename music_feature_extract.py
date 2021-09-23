@@ -140,57 +140,13 @@ glob_music_files.__doc__ = glob_music_files.__doc__.format(
 )
 
 
-def extract_music_features(music_file: pathlib.Path):
-	y, sr = librosa.load(music_file)
-
-	tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
-
-	beat_times = librosa.frames_to_time(beat_frames, sr=sr)
-
-	y_harmonic, y_percussive = librosa.effects.hpss(y)
-
-	mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=512, n_mfcc=13)
-
-	mfcc_delta = librosa.feature.delta(mfcc)
-
-	beat_mfcc_delta = librosa.util.sync(
-		np.vstack([mfcc, mfcc_delta]), beat_frames
-	)
-
-	chromagram = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr)
-
-	beat_chroma = librosa.util.sync(chromagram, beat_frames, aggregate=np.median)
-
-	beat_feature = np.vstack([beat_chroma, beat_mfcc_delta])
-
-	return {
-		'y' : y,
-		'sr' : sr,
-		'tempo' : tempo,
-		'beat_frames' : beat_frames,
-		'beat_times' : beat_times,
-		'y_harmonic' : y_harmonic,
-		'y_percussive' : y_percussive,
-		'mfcc' : mfcc,
-		'mfcc_delta' : mfcc_delta,
-		'beat_mfcc_delta' : beat_mfcc_delta,
-		'chromagram' : chromagram,
-		'beat_chroma' : beat_chroma,
-		'beat_feature' : beat_feature
-	}
-
-
-def store_music_features(
-	music_fname,
-	music_features,
-	output_path: pathlib.Path
-):
+def store_music_features(music_extractor, output_path: pathlib.Path):
 	BP()
-	for ft_name, feat in music_features.items():
+	for ft_name, feat in music_extractor:
 		try:
 			fig, ax = plt.subplots()
 			librosa.display.specshow(feat, ax=ax)
-			fig.savefig(music_fname.name + f".{ft_name}.png")
+			fig.savefig(music_extractor.name + f".{ft_name}.png")
 			plt.close(fig)
 		except Exception as e:
 			print("EXCEPTION:", e, ft_name, type(feat))
@@ -227,19 +183,15 @@ if __name__ == "__main__":
 
 
 	print("Reading music features ...")
-	music_features = dict()
+	music_extractors = set()
 
 	for music_file in args.input_pathes:
-		print(f"Music file: '{music_file.name}'")
-
-		m_features = extract_music_features(music_file)
-
-		music_features.update({ music_file : m_features })
+		music_extractors.add(MFExtractor(music_file))
 
 
 	print("Writing music features ...")
-	for fname, features in music_features.items():
-		store_music_features(fname, features, args.output_path)
+	for mfe in music_extractors:
+		store_music_features(mfe, args.output_path)
 
 	BP()
 
