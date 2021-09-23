@@ -42,7 +42,7 @@ class MFExtractor:
 
 	@cached_property
 	def y_sr(self):
-		return librosa.load(self.fpath)
+		return librosa.load(self.file_path)
 
 	@property
 	def y(self):
@@ -181,23 +181,20 @@ def extract_music_features(music_file: pathlib.Path):
 
 
 def store_music_features(
-	music_file_name,
+	music_fname,
 	music_features,
 	output_path: pathlib.Path
 ):
-	for ft_name, feat in (
-		(n, f) for n, f in music_features.items() if isinstance(f, np.ndarray)
-	):
+	BP()
+	for ft_name, feat in music_features.items():
 		try:
 			fig, ax = plt.subplots()
 			librosa.display.specshow(feat, ax=ax)
-			fig.savefig(music_file.name + f".{ft_name}.png")
+			fig.savefig(music_fname.name + f".{ft_name}.png")
 			plt.close(fig)
 		except Exception as e:
-			print("EXCEPTION:", e)
-			e.args = (*e.args, f"Failed to write feature: '{fname}'" )
-			#BP()
-			#raise
+			print("EXCEPTION:", e, ft_name, type(feat))
+			e.args = (*e.args, f"Failed to write feature: '{ft_name}'" )
 
 
 if __name__ == "__main__":
