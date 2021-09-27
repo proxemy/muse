@@ -50,46 +50,39 @@ class MFExtractor:
 		self.n_mfcc = n_mfcc
 
 	@cached_property
-	def signal_sr(self):
-		return librosa.load(self.file_path, self.sample_rate)
-
-	@property
 	def signal(self):
-		return self.signal_sr[0]
+		# elm [1] is auto detected sample rate
+		return librosa.load(self.file_path, self.sample_rate)[0]
 
 	@cached_property
-	def tempo_beat_frames(self):
-		return librosa.beat.beat_track(y=self.signal, sr=self.sample_rate)
-
-	@property
-	def tempo(self):
-		return self.tempo_beat_frames[0]
-
-	@property
-	def beat_frames(self):
-		return self.tempo_beat_frames[1]
-
-	@cached_property
-	def y_harmonic_y_percussive(self):
+	def signal_harmonic_percussive(self):
 		return librosa.effects.hpss(self.signal)
 
 	@property
-	def y_harmonic(self):
-		return self.y_harmonic_y_percussive[0]
+	def signal_harmonic(self):
+		return self.signal_harmonic_percussive[0]
 
 	@property
-	def y_percussive(self):
-		return self.y_harmonic_y_percussive[1]
+	def signal_percussive(self):
+		return self.signal_harmonic_percussive[1]
 
-	@cached_property
-	def beat_times(self):
-		return librosa.frames_to_time(self.beat_frames, self.sample_rate)
+	@property
+	def beat_frames(self):
+		return librosa.beat.beat_track(
+			y=self.signal_percussive,
+			sr=self.sample_rate
+		)[1] # elm [0] is tempo
+
+	#@cached_property
+	#def beat_times(self):
+	#	return librosa.frames_to_time(self.beat_frames, self.sample_rate)
 
 	@cached_property
 	def mfcc(self):
 		return librosa.feature.mfcc(
 			y=self.signal,
 			sr=self.sample_rate,
+			hop_length=self.hop_length,
 			n_mfcc=self.n_mfcc
 		)
 
@@ -98,19 +91,29 @@ class MFExtractor:
 		return librosa.feature.delta(self.mfcc)
 
 	@cached_property
+	def beat_mfcc_delta(self):
+		return librosa.util.sync(
+			np.vstack([self.mfcc, self.mfcc_delta]),
+			self.beat_frames
+		)
+
+	@cached_property
 	def chromagram(self):
-		return librosa.feature.chroma_cqt(y=self.y_harmonic, sr=self.sample_rate)
+		return librosa.feature.chroma_cqt(
+			y=self.signal_harmonic,
+			sr=self.sample_rate
+		)
 
 	@cached_property
 	def beat_chroma(self):
 		return librosa.util.sync(
 			self.chromagram,
 			self.beat_frames,
-			aggregate=np.median
+			aggregate=np.median # np.[min,max,std](default:avg)
 		)
 
 	@cached_property
-	def beat_feature(self):
+	def beat_features(self):
 		return np.vstack([self.beat_chroma, self.beat_mfcc_delta])
 
 	@cached_property
@@ -125,48 +128,24 @@ class MFExtractor:
 	def log_spectrum(self):
 		return librosa.amplitude_to_db(self.spectrum)
 
-
-	# Visualization part
-
-
-	@cached_property
-	def waveform(self, alpha=0.4):
-		return librosa.display.waveplot(self.signal, self.sample_rate, alpha)
-
-	@cached_property
-	def spectrogram(self):
-		return librosa.display.specshow(
-			self.spectrum,
-			sr=self.sample_rate,
-			hop_length=self.hop_length
-		)
-
-	@cached_property
-	def log_spectrogram(self):
-		return librosa.display.specshow(
-			self.log_spectrum,
-			sr=self.sample_rate,
-			hop_length=self.hop_length
-		)
-
 	@cached_property
 	def viterbi(self):
-		return librosa.display.specshow(
-			librosa.amplitude_to_db(
-				librosa.magphase(self.short_time_fourier_transform)[0],
-				ref=np.max
-			),
-			sr=self.sample_rate
+		return librosa.amplitude_to_db(
+			librosa.magphase(self.short_time_fourier_transform)[0],
+			ref=np.max
 		)
 
 	def __iter__(self):
 		for x in (
-			# name					function
-			#("waveform",			self.waveform),
-			#("spectrogram",		self.spectrogram),
-			("log_spectrogram",		self.log_spectrogram),
+			# name					(cached_)property
+			#("spectrum",			self.spectrum),
+			("log_spectrum",		self.log_spectrum),
 			("beat_chroma",			self.beat_chroma),
+			("beat_features",		self.beat_features),
 			("viterbi",				self.viterbi),
+			("mfcc",				self.mfcc),
+			("mfcc_delta",			self.mfcc_delta),
+			("chromagram",			self.chromagram),
 		):
 			yield x
 
@@ -211,14 +190,18 @@ def store_music_features(music_extractor, output_path: pathlib.Path):
 	for ft_name, feature in music_extractor:
 		try:
 			fig, ax = plt.subplots()
-			librosa.display.specshow(feature, ax=ax)
+			librosa.display.specshow(
+				feature,
+				ax=ax,
+				sr=music_extractor.sample_rate,
+				hop_length=music_extractor.hop_length
+			)
 			fig.savefig(mfile_name + f"_{ft_name}.png")
 			plt.close(fig)
 		except Exception as e:
 			print("EXCEPTION:", e, ft_name)
-			e.args = (*e.args, f"Failed to write feature: '{feature}'" )
-			BP()
-			#raise
+			e.args = (*e.args, f"Failed to write feature: '{ft_name}'" )
+			raise
 
 
 if __name__ == "__main__":
