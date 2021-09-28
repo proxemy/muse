@@ -66,6 +66,18 @@ class MFExtractor:
 	def signal_percussive(self):
 		return self.signal_harmonic_percussive[1]
 
+	@cached_property
+	def decompose_harmonic_percussive(self):
+		return librosa.decompose.hpss(self.short_time_fourier_transform, margin=32)
+
+	@cached_property
+	def decompose_harmonic(self):
+		return self.decompose_harmonic_percussive[0]
+
+	@cached_property
+	def decompose_percussive(self):
+		return self.decompose_harmonic_percussive[1]
+
 	@property
 	def beat_frames(self):
 		return librosa.beat.beat_track(
@@ -105,6 +117,20 @@ class MFExtractor:
 		)
 
 	@cached_property
+	def chromagram_harmonic(self):
+		return librosa.feature.chroma_cqt(
+			self.signal_harmonic,
+			sr=self.sample_rate
+		)
+
+	@cached_property
+	def chromagram_percussive(self):
+		return librosa.feature.chroma_cqt(
+			self.signal_percussive,
+			sr=self.sample_rate
+		)
+
+	@cached_property
 	def beat_chroma(self):
 		return librosa.util.sync(
 			self.chromagram,
@@ -125,7 +151,7 @@ class MFExtractor:
 		return np.abs(self.short_time_fourier_transform)
 
 	@cached_property
-	def log_spectrum(self):
+	def spectrogram_log(self):
 		return librosa.amplitude_to_db(self.spectrum)
 
 	@cached_property
@@ -135,17 +161,51 @@ class MFExtractor:
 			ref=np.max
 		)
 
+	@cached_property
+	def spectrogram_mel(self):
+		return librosa.power_to_db(
+			librosa.feature.melspectrogram(y=self.signal, hop_length=self.hop_length),
+			ref=np.max
+		)
+
+	@cached_property
+	def spectrogram_pcen(self):
+		return librosa.pcen(
+			np.abs(self.short_time_fourier_transform),
+			sr=self.sample_rate,
+			hop_length=self.hop_length
+		)
+
+	@cached_property
+	def spectrogram_harmonic(self):
+		return librosa.amplitude_to_db(
+			np.abs(self.decompose_harmonic),
+			ref=np.max(np.abs(self.short_time_fourier_transform))
+		)
+
+	@cached_property
+	def spectrogram_percussive(self):
+		return librosa.amplitude_to_db(
+			np.abs(self.decompose_percussive),
+			ref=np.max(np.abs(self.short_time_fourier_transform))
+		)
+
 	def __iter__(self):
 		for x in (
-			# name					(cached_)property
-			#("spectrum",			self.spectrum),
-			("log_spectrum",		self.log_spectrum),
-			("beat_chroma",			self.beat_chroma),
-			("beat_features",		self.beat_features),
-			("viterbi",				self.viterbi),
-			("mfcc",				self.mfcc),
-			("mfcc_delta",			self.mfcc_delta),
-			("chromagram",			self.chromagram),
+			# name						(cached_)property
+			("beat_chroma",				self.beat_chroma),
+			("beat_features",			self.beat_features),
+			("viterbi",					self.viterbi),
+			("mfcc",					self.mfcc),
+			("mfcc_delta",				self.mfcc_delta),
+			("chromagram",				self.chromagram),
+			("chromagram_harmonic", 	self.chromagram_harmonic),
+			("chromagram_percussive",	self.chromagram_percussive),
+			("spectrogram_log",			self.spectrogram_log),
+			("spectrogram_mel",			self.spectrogram_mel),
+			("spectrogram_pcen",		self.spectrogram_pcen),
+			("spectrogram_harmonic",	self.spectrogram_harmonic),
+			("spectrogram_percussive",	self.spectrogram_percussive),
 		):
 			yield x
 
