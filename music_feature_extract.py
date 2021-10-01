@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import librosa.display
 from typing import List
-from cached_property import cached_property
+from functools import cached_property
 
 from pdb import set_trace as BP
 
@@ -68,7 +68,11 @@ class MFExtractor:
 
 	@cached_property
 	def decompose_harmonic_percussive(self):
-		return librosa.decompose.hpss(self.short_time_fourier_transform, margin=32)
+		return librosa.decompose.hpss(
+			self.short_time_fourier_transform,
+			#kernel_size=16,
+			margin=16,
+		)
 
 	@cached_property
 	def decompose_harmonic(self):
@@ -195,6 +199,7 @@ class MFExtractor:
 			# name						(cached_)property
 			("beat_chroma",				self.beat_chroma),
 			("beat_features",			self.beat_features),
+			("beat_mfcc_delta",			self.beat_mfcc_delta),
 			("viterbi",					self.viterbi),
 			("mfcc",					self.mfcc),
 			("mfcc_delta",				self.mfcc_delta),
@@ -248,6 +253,7 @@ glob_music_files.__doc__ = glob_music_files.__doc__.format(
 def store_music_features(music_extractor, output_path: pathlib.Path):
 	mfile_name = music_extractor.file_path.name
 	for ft_name, feature in music_extractor:
+		print(f"   {ft_name} ...")
 		try:
 			fig, ax = plt.subplots()
 			librosa.display.specshow(
@@ -293,7 +299,6 @@ if __name__ == "__main__":
 		raise ValueError(f"'{args.output_path}' ouput path does't exist.")
 
 
-	print("Reading music features ...")
 	music_extractors = set()
 
 	for music_file in args.input_pathes:
@@ -302,9 +307,11 @@ if __name__ == "__main__":
 
 	print("Writing music features ...")
 	for mfe in music_extractors:
+		print(mfe.file_path.name)
 		store_music_features(mfe, args.output_path)
 
-	BP()
+	if False:
+		BP()
 
 
 
