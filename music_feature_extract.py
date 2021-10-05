@@ -107,41 +107,13 @@ class MFExtractor:
 	def beat_mfcc_delta(self):
 		return librosa.util.sync(
 			np.vstack([self.mfcc, self.mfcc_delta]),
-			self.beat_frames
-		)
-
-	@cached_property
-	def chromagram(self):
-		return librosa.feature.chroma_cqt(
-			y=self.signal_harmonic,
-			sr=self.sample_rate
-		)
-
-	@cached_property
-	def chromagram_harmonic(self):
-		return librosa.feature.chroma_cqt(
-			self.signal_harmonic,
-			sr=self.sample_rate
-		)
-
-	@cached_property
-	def chromagram_percussive(self):
-		return librosa.feature.chroma_cqt(
-			self.signal_percussive,
-			sr=self.sample_rate
-		)
-
-	@cached_property
-	def beat_chroma(self):
-		return librosa.util.sync(
-			self.chromagram,
 			self.beat_frames,
-			aggregate=np.median # np.[min,max,std](default:avg)
+			aggregate=np.median
 		)
 
 	@cached_property
 	def beat_features(self):
-		return np.vstack([self.beat_chroma, self.beat_mfcc_delta])
+		return np.vstack([self.chromagram_beat, self.beat_mfcc_delta])
 
 	@cached_property
 	def short_time_fourier_transform(self):
@@ -163,9 +135,48 @@ class MFExtractor:
 		)
 
 	@cached_property
+	def chromagram_stft(self):
+		return librosa.feature.chroma_stft(self.signal, sr=self.sample_rate)
+
+	@cached_property
+	def chromagram_cqt(self):
+		return librosa.feature.chroma_cqt(self.signal, sr=self.sample_rate)
+
+	@cached_property
+	def chromagram_cens(self):
+		return librosa.feature.chroma_cens(y=self.signal, sr=self.sample_rate)
+
+	@cached_property
+	def chromagram_beat(self):
+		return librosa.util.sync(
+			self.chromagram_harmonic,
+			self.beat_frames,
+			aggregate=np.median # np.[min,max,std](default:avg)
+		)
+
+	@cached_property
+	def chromagram_harmonic(self):
+		return librosa.feature.chroma_cqt(
+			self.signal_harmonic,
+			sr=self.sample_rate
+		)
+
+	@cached_property
+	def chromagram_percussive(self):
+		return librosa.feature.chroma_cqt(
+			self.signal_percussive,
+			sr=self.sample_rate
+		)
+
+	@cached_property
 	def spectrogram_mel(self):
 		return librosa.power_to_db(
-			librosa.feature.melspectrogram(y=self.signal, hop_length=self.hop_length),
+			librosa.feature.melspectrogram(
+				y=self.signal,
+				hop_length=self.hop_length,
+				n_mels=self.n_mels,
+				fmax=self.fmax
+			),
 			ref=np.max
 		)
 
@@ -192,24 +203,26 @@ class MFExtractor:
 		)
 
 	def __iter__(self):
-		for x in (
-			# name						(cached_)property
-			("beat_chroma",				self.beat_chroma),
-			("beat_features",			self.beat_features),
-			("beat_mfcc_delta",			self.beat_mfcc_delta),
-			("viterbi",					self.viterbi),
-			("mfcc",					self.mfcc),
-			("mfcc_delta",				self.mfcc_delta),
-			("chromagram",				self.chromagram),
-			("chromagram_harmonic", 	self.chromagram_harmonic),
-			("chromagram_percussive",	self.chromagram_percussive),
-			("spectrogram_log",			self.spectrogram_log),
-			("spectrogram_mel",			self.spectrogram_mel),
-			("spectrogram_pcen",		self.spectrogram_pcen),
-			("spectrogram_harmonic",	self.spectrogram_harmonic),
-			("spectrogram_percussive",	self.spectrogram_percussive),
-		):
-			yield x
+		for v in [
+			"beat_features",
+			"beat_mfcc_delta",
+			"viterbi",
+			"mfcc",
+			"mfcc_delta",
+			"chromagram_stft",
+			"chromagram_cqt",
+			"chromagram_cens",
+			"chromagram_beat",
+			"chromagram_harmonic",
+			"chromagram_percussive",
+			"spectrogram_log",
+			"spectrogram_mel",
+			"spectrogram_pcen",
+			"spectrogram_harmonic",
+			"spectrogram_percussive",
+		]:
+			yield v, getattr(self, v)
+			del self.__dict__[v] # to reduce the memory footprint
 
 
 def glob_music_files(input_pathes: List[pathlib.Path]) -> List[pathlib.Path]:
