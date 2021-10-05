@@ -48,8 +48,8 @@ class MFExtractor:
 
 	@cached_property
 	def signal(self):
-		# elm [1] is auto detected sample rate
-		return librosa.load(self.file_path, self.sample_rate)[0]
+		# elm [1] is auto detected sample rate with 'sr=None' param
+		return librosa.load(self.file_path, sr=self.sample_rate)[0]
 
 	@cached_property
 	def signal_harmonic_percussive(self):
