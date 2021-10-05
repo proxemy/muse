@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-import librosa
+import librosa, librosa.display
 import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
-import librosa.display
 from typing import List
 from functools import cached_property
+from dataclasses import dataclass
 
 from pdb import set_trace as BP
 
@@ -32,22 +32,19 @@ __doc__ = \
 ##################
 
 
+@dataclass(frozen=True)
 class MFExtractor:
 	"""
 	This class is a stateful wrapper around the libroa API.
 	It laods a single music file.
 	"""
-	def __init__(
-		self,
-		file_path: pathlib.Path,
-		sample_rate=22050,
-		hop_length=512,
-		n_mfcc=13
-	):
-		self.file_path = file_path
-		self.sample_rate = sample_rate
-		self.hop_length = hop_length
-		self.n_mfcc = n_mfcc
+
+	file_path: pathlib.Path
+	sample_rate: int = 22050
+	hop_length: int = 512
+	n_mfcc: int = 13
+	n_mels: int = 128
+	fmax: int = 8000
 
 	@cached_property
 	def signal(self):
