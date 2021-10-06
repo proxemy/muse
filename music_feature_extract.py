@@ -65,11 +65,7 @@ class MFExtractor:
 
 	@cached_property
 	def decompose_harmonic_percussive(self):
-		return librosa.decompose.hpss(
-			self.short_time_fourier_transform,
-			#kernel_size=16,
-			margin=16,
-		)
+		return librosa.decompose.hpss(self.short_time_fourier_transform)
 
 	@cached_property
 	def decompose_harmonic(self):
@@ -86,10 +82,6 @@ class MFExtractor:
 			sr=self.sample_rate
 		)[1] # elm [0] is tempo
 
-	#@cached_property
-	#def beat_times(self):
-	#	return librosa.frames_to_time(self.beat_frames, self.sample_rate)
-
 	@cached_property
 	def mfcc(self):
 		return librosa.feature.mfcc(
@@ -104,7 +96,7 @@ class MFExtractor:
 		return librosa.feature.delta(self.mfcc)
 
 	@cached_property
-	def beat_mfcc_delta(self):
+	def mfcc_beat_delta(self):
 		return librosa.util.sync(
 			np.vstack([self.mfcc, self.mfcc_delta]),
 			self.beat_frames,
@@ -112,27 +104,8 @@ class MFExtractor:
 		)
 
 	@cached_property
-	def beat_features(self):
-		return np.vstack([self.chromagram_beat, self.beat_mfcc_delta])
-
-	@cached_property
 	def short_time_fourier_transform(self):
 		return librosa.stft(self.signal, hop_length=self.hop_length)
-
-	@cached_property
-	def spectrum(self):
-		return np.abs(self.short_time_fourier_transform)
-
-	@cached_property
-	def spectrogram_log(self):
-		return librosa.amplitude_to_db(self.spectrum)
-
-	@cached_property
-	def viterbi(self):
-		return librosa.amplitude_to_db(
-			librosa.magphase(self.short_time_fourier_transform)[0],
-			ref=np.max
-		)
 
 	@cached_property
 	def chromagram_stft(self):
@@ -145,28 +118,6 @@ class MFExtractor:
 	@cached_property
 	def chromagram_cens(self):
 		return librosa.feature.chroma_cens(y=self.signal, sr=self.sample_rate)
-
-	@cached_property
-	def chromagram_beat(self):
-		return librosa.util.sync(
-			self.chromagram_harmonic,
-			self.beat_frames,
-			aggregate=np.median # np.[min,max,std](default:avg)
-		)
-
-	@cached_property
-	def chromagram_harmonic(self):
-		return librosa.feature.chroma_cqt(
-			self.signal_harmonic,
-			sr=self.sample_rate
-		)
-
-	@cached_property
-	def chromagram_percussive(self):
-		return librosa.feature.chroma_cqt(
-			self.signal_percussive,
-			sr=self.sample_rate
-		)
 
 	@cached_property
 	def spectrogram_mel(self):
@@ -189,6 +140,13 @@ class MFExtractor:
 		)
 
 	@cached_property
+	def spectrogram_magphase(self):
+		return librosa.amplitude_to_db(
+			librosa.magphase(self.short_time_fourier_transform)[0],
+			ref=np.max
+		)
+
+	@cached_property
 	def spectrogram_harmonic(self):
 		return librosa.amplitude_to_db(
 			np.abs(self.decompose_harmonic),
@@ -204,20 +162,15 @@ class MFExtractor:
 
 	def __iter__(self):
 		for v in [
-			"beat_features",
-			"beat_mfcc_delta",
-			"viterbi",
 			"mfcc",
 			"mfcc_delta",
+			"mfcc_beat_delta",
 			"chromagram_stft",
 			"chromagram_cqt",
 			"chromagram_cens",
-			"chromagram_beat",
-			"chromagram_harmonic",
-			"chromagram_percussive",
-			"spectrogram_log",
 			"spectrogram_mel",
 			"spectrogram_pcen",
+			"spectrogram_magphase",
 			"spectrogram_harmonic",
 			"spectrogram_percussive",
 		]:
