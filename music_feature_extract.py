@@ -136,11 +136,11 @@ class MFExtractor:
 
 	@cached_property
 	def chromagram_stft(self):
-		return librosa.feature.chroma_stft(self.signal, sr=self.sample_rate)
+		return librosa.feature.chroma_stft(y=self.signal, sr=self.sample_rate)
 
 	@cached_property
 	def chromagram_cqt(self):
-		return librosa.feature.chroma_cqt(self.signal, sr=self.sample_rate)
+		return librosa.feature.chroma_cqt(y=self.signal, sr=self.sample_rate)
 
 	@cached_property
 	def chromagram_cens(self):
@@ -222,7 +222,7 @@ class MFExtractor:
 			"spectrogram_percussive",
 		]:
 			yield v, getattr(self, v)
-			del self.__dict__[v] # to reduce the memory footprint
+			del self.__dict__[v] # to reduce memory footprint
 
 
 def glob_music_files(input_pathes: List[pathlib.Path]) -> List[pathlib.Path]:
