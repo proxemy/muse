@@ -266,13 +266,20 @@ def store_music_features(music_extractor, output_path: pathlib.Path):
 		print(f"   {ft_name} ...")
 		try:
 			fig, ax = plt.subplots()
+			fig.frameon = False
+			ax.set_axis_off()
 			librosa.display.specshow(
 				feature,
 				ax=ax,
 				sr=music_extractor.sample_rate,
-				hop_length=music_extractor.hop_length
+				hop_length=music_extractor.hop_length,
+				fmax=music_extractor.fmax
 			)
-			fig.savefig(mfile_name + f"_{ft_name}.png")
+			fig.savefig(
+				mfile_name + f"_{ft_name}.png",
+				bbox_inches='tight',
+				pad_inches=0
+			)
 			plt.close(fig)
 		except Exception as e:
 			print("EXCEPTION:", e, ft_name)
