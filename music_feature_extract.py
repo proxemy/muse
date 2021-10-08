@@ -45,6 +45,8 @@ class MFExtractor:
 	n_mfcc: int = 13
 	n_mels: int = 128
 	fmax: int = 8000
+	is_example: bool = False
+
 
 	@cached_property
 	def signal(self):
@@ -160,19 +162,46 @@ class MFExtractor:
 			ref=np.max(np.abs(self.short_time_fourier_transform))
 		)
 
+	@cached_property
+	def onset_strength(self):
+		return librosa.onset.onset_strength(
+			y=self.signal,
+			sr=self.sample_rate,
+			hop_length=self.hop_length
+		)
+
+	@cached_property
+	def tempogram_autocorrelated(self):
+		return np.abs(librosa.feature.tempogram(
+			self.onset_strength,
+			sr=self.sample_rate,
+			hop_length=self.hop_length,
+			norm=False
+		))
+
+	@cached_property
+	def tempogram_fourier(self):
+		return np.abs(librosa.feature.fourier_tempogram(
+			self.onset_strength,
+			sr=self.sample_rate,
+			hop_length=self.hop_length
+		))
+
 	def __iter__(self):
 		for v in [
-			"mfcc",
-			"mfcc_delta",
-			"mfcc_beat_delta",
-			"chromagram_stft",
-			"chromagram_cqt",
-			"chromagram_cens",
-			"spectrogram_mel",
-			"spectrogram_pcen",
-			"spectrogram_magphase",
-			"spectrogram_harmonic",
-			"spectrogram_percussive",
+			#"mfcc",
+			#"mfcc_delta",
+			#"mfcc_beat_delta",
+			#"chromagram_stft",
+			#"chromagram_cqt",
+			#"chromagram_cens",
+			#"spectrogram_mel",
+			#"spectrogram_pcen",
+			#"spectrogram_magphase",
+			#"spectrogram_harmonic",
+			#"spectrogram_percussive",
+			"tempogram_autocorrelated",
+			"tempogram_fourier"
 		]:
 			yield v, getattr(self, v)
 			del self.__dict__[v] # to reduce memory footprint
@@ -247,7 +276,7 @@ if __name__ == "__main__":
 		( "-i", {
 			"dest" : "input_pathes",
 			"type" : pathlib.Path,
-			"required" : True,
+			#"required" : True,
 			"action" : "append",
 			"help" : "A single music file or path for recursive lookup. (multiple)"
 		}),
@@ -257,8 +286,21 @@ if __name__ == "__main__":
 			"default" : pathlib.Path().cwd(),
 			"help" : "Output folder. New directories will be created there."
 		}),
+		( "-e", {
+			"dest" : "examples",
+			"type" : str,
+			"action" : "append",
+			"help" : "Librosa example audio to load/process. Does not get saved."
+		}),
 	]:
 		arg_parser.add_argument(arg[0], **arg[1])
+	
+	grp = arg_parser.add_mutually_exclusive_group(required=True)
+	BP()
+	grp.add_argument("-i")
+	grp.add_argument("-e")
+
+	BP()
 	args = arg_parser.parse_args()
 
 
