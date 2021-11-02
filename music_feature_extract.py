@@ -272,35 +272,28 @@ def store_music_features(music_extractor, output_path: pathlib.Path):
 if __name__ == "__main__":
 	import argparse
 	arg_parser = argparse.ArgumentParser(description=__doc__)
-	for arg in [
-		( "-i", {
-			"dest" : "input_pathes",
-			"type" : pathlib.Path,
-			#"required" : True,
-			"action" : "append",
-			"help" : "A single music file or path for recursive lookup. (multiple)"
-		}),
-		( "-o", {
-			"dest" : "output_path",
-			"type" : pathlib.Path,
-			"default" : pathlib.Path().cwd(),
-			"help" : "Output folder. New directories will be created there."
-		}),
-		( "-e", {
-			"dest" : "examples",
-			"type" : str,
-			"action" : "append",
-			"help" : "Librosa example audio to load/process. Does not get saved."
-		}),
-	]:
-		arg_parser.add_argument(arg[0], **arg[1])
-	
-	grp = arg_parser.add_mutually_exclusive_group(required=True)
-	BP()
-	grp.add_argument("-i")
-	grp.add_argument("-e")
 
-	BP()
+	grp = arg_parser.add_mutually_exclusive_group(required=True)
+	grp.add_argument("-i",
+		dest="input_pathes",
+		type=pathlib.Path,
+		action="append",
+		help= "A single music file or path for recursive lookup. (multiple)"
+	)
+	grp.add_argument("-e",
+		dest="examples",
+		type=str,
+		action="append",
+		help="Librosa example audio to load/process. Does not get saved."
+	)
+
+	arg_parser.add_argument("-o",
+		dest="output_path",
+		type=pathlib.Path,
+		default=pathlib.Path().cwd(),
+		help="Output folder. New directories will be created there."
+	)
+
 	args = arg_parser.parse_args()
 
 
