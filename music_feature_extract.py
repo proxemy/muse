@@ -42,19 +42,48 @@ class MFExtractor:
 	It laods a single music file.
 	"""
 
-	file_path: pathlib.Path
+	source: pathlib.Path
+	is_example: bool = False
 	sample_rate: int = 22050
 	hop_length: int = 512
 	n_mfcc: int = 13
 	n_mels: int = 128
 	fmax: int = 8000
-	is_example: bool = False
+
+
+	def __post_init__(self):
+		if not isinstance(self.source, (str, pathlib.Path)):
+			raise TypeError(f"Illegal initialization type '{type(self.source)}' for MFExtractor.")
+
+		if self.is_example:
+			if not self.source in supported_examples():
+				raise ValueError(
+					f"Illegal librosa example '{self.source}', use '{supported_examples()}'."
+				)
+
+		else:
+			if not self.source.exists():
+				raise FileNotFoundError(f"Music file '{self.source}' not found.")
+
+
+	def is_supported(file_path_or_example) -> bool:
+		return \
+			file_path_or_example in supported_examples() or \
+			pathlib.Path(file_path_or_example).suffix[1:].upper() in supported_formats()
+
+
+	@property
+	def name(self):
+		return self.source.name if not self.is_example else self.source
 
 
 	@cached_property
 	def signal(self):
 		# elm [1] is auto detected sample rate with 'sr=None' param
-		return librosa.load(self.file_path, sr=self.sample_rate)[0]
+		return librosa.load(
+			librosa.ex(self.source) if self.is_example else self.source,
+			sr=self.sample_rate
+		)[0]
 
 	@cached_property
 	def signal_harmonic_percussive(self):
@@ -223,21 +252,20 @@ def glob_music_files(input_pathes: List[pathlib.Path]) -> List[pathlib.Path]:
 			raise ValueError(f"'{p}' input path does not exist.")
 
 		if p.is_file():
-			if p.suffix[1:].upper() in supported_formats():
+			if MFExtractor.is_supported(p):
 				ret.update({p})
 			else:
 				raise ValueError(f"'{p}' input file format is not supported.")
 
 		elif p.is_dir():
 			ret.update([
-				f for f in p.rglob("*")
-				if f.suffix[1:].upper() in supported_formats()
+				f for f in p.rglob("*") if MFExtractor.is_supported(f)
 			])
 
 	if not ret:
 		raise ValueError(f"Could't find supported audio files at '{input_pathes}'")
 
-	return ret
+	return list(ret)
 
 
 glob_music_files.__doc__ = glob_music_files.__doc__.format(
@@ -246,7 +274,7 @@ glob_music_files.__doc__ = glob_music_files.__doc__.format(
 
 
 def store_music_features(music_extractor, output_path: pathlib.Path):
-	mfile_name = music_extractor.file_path.name
+	mfile_name = music_extractor.name
 	for ft_name, feature in music_extractor:
 		print(f"   {ft_name} ...")
 		try:
@@ -301,23 +329,26 @@ if __name__ == "__main__":
 
 	args = arg_parser.parse_args()
 
-
-	# clean/process/check the input args
-	args.input_pathes = glob_music_files(args.input_pathes)
-
 	if not args.output_path.exists():
 		raise ValueError(f"'{args.output_path}' ouput path does't exist.")
+
+	# clean/process/check the input args
+	if args.input_pathes:
+		args.input_pathes = glob_music_files(args.input_pathes)
+
 
 
 	music_extractors = set()
 
 	for music_file in args.input_pathes:
 		music_extractors.add(MFExtractor(music_file))
+	for music_exmaple in args.examples:
+		music_extractors.add(MFExtractor(music_exmaple, is_example=True))
 
 
 	print("Writing music features ...")
 	for mfe in music_extractors:
-		print(mfe.file_path.name)
+		print(mfe.name)
 		store_music_features(mfe, args.output_path)
 
 	if False:
