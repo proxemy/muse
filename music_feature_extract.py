@@ -17,6 +17,9 @@ def supported_formats():
 	# mp3 is supported via librosas audioread dependecy
 	return sorted([ *sf_avail_fmts().keys(), "MP3" ])
 
+def supported_examples():
+	return list(librosa.util.files.__TRACKMAP.keys())
+
 
 __doc__ = \
 	"""
@@ -278,12 +281,14 @@ if __name__ == "__main__":
 		dest="input_pathes",
 		type=pathlib.Path,
 		action="append",
+		default=[],
 		help= "A single music file or path for recursive lookup. (multiple)"
 	)
 	grp.add_argument("-e",
 		dest="examples",
 		type=str,
 		action="append",
+		default=[],
 		help="Librosa example audio to load/process. Does not get saved."
 	)
 
