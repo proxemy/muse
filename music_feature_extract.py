@@ -52,17 +52,20 @@ class MFExtractor:
 
 
 	def __post_init__(self):
+		"""Validates the construction arguments. Raises Exceptions."""
 		if not isinstance(self.source, (str, pathlib.Path)):
 			raise TypeError(f"Illegal initialization type '{type(self.source)}' for MFExtractor.")
 
 		if self.is_example:
-			if not self.source in supported_examples():
+			if not isinstance(self.source, str) \
+			or not self.source in supported_examples():
 				raise ValueError(
 					f"Illegal librosa example '{self.source}', use '{supported_examples()}'."
 				)
 
 		else:
-			if not self.source.exists():
+			if not isinstance(self.source, pathlib.Path) \
+			or not self.source.exists():
 				raise FileNotFoundError(f"Music file '{self.source}' not found.")
 
 
