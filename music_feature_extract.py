@@ -326,16 +326,24 @@ if __name__ == "__main__":
 		default=pathlib.Path().cwd(),
 		help="Output folder. New directories will be created there."
 	)
+	arg_parser.add_argument("--debug",
+		dest="debug",
+		action="store_true",
+		default=False,
+		help="Toggle on to print more output."
+	)
 
 	args = arg_parser.parse_args()
+
+	if not args.debug:
+		import warnings
+		warnings.filterwarnings("ignore")
 
 	if not args.output_path.exists():
 		raise ValueError(f"'{args.output_path}' ouput path does't exist.")
 
-	# clean/process/check the input args
 	if args.input_pathes:
 		args.input_pathes = glob_music_files(args.input_pathes)
-
 
 
 	music_extractors = set()
