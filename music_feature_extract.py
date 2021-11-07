@@ -68,17 +68,41 @@ class MFExtractor:
 			or not self.source.exists():
 				raise FileNotFoundError(f"Music file '{self.source}' not found.")
 
+	__ITERABLES__ = [
+			"mfcc",
+			"mfcc_delta",
+			"mfcc_beat_delta",
+			"chromagram_stft",
+			"chromagram_cqt",
+			"chromagram_cens",
+			"spectrogram_mel",
+			"spectrogram_pcen",
+			"spectrogram_magphase",
+			"spectrogram_harmonic",
+			"spectrogram_percussive",
+			"tempogram_autocorrelated",
+			"tempogram_fourier"
+		]
+
+	def __iter__(self):
+		for v in MFExtractor.__ITERABLES__:
+			yield v, getattr(self, v)
+			del self.__dict__[v] # to reduce memory footprint
 
 	def is_supported(file_path_or_example) -> bool:
 		return \
 			file_path_or_example in supported_examples() or \
 			pathlib.Path(file_path_or_example).suffix[1:].upper() in supported_formats()
 
-
 	@property
 	def name(self):
 		return self.source.name if not self.is_example else self.source
 
+
+
+	#################
+	# librosa stuff #
+	#################
 
 	@cached_property
 	def signal(self):
@@ -222,24 +246,6 @@ class MFExtractor:
 			hop_length=self.hop_length
 		))
 
-	def __iter__(self):
-		for v in [
-			#"mfcc",
-			#"mfcc_delta",
-			#"mfcc_beat_delta",
-			#"chromagram_stft",
-			#"chromagram_cqt",
-			#"chromagram_cens",
-			#"spectrogram_mel",
-			#"spectrogram_pcen",
-			#"spectrogram_magphase",
-			#"spectrogram_harmonic",
-			#"spectrogram_percussive",
-			"tempogram_autocorrelated",
-			"tempogram_fourier"
-		]:
-			yield v, getattr(self, v)
-			del self.__dict__[v] # to reduce memory footprint
 
 
 def glob_music_files(input_pathes: List[pathlib.Path]) -> List[pathlib.Path]:
