@@ -282,7 +282,7 @@ glob_music_files.__doc__ = glob_music_files.__doc__.format(
 )
 
 
-def store_music_features(music_extractor, output_path: pathlib.Path):
+def store_music_features(music_extractor, output_path: pathlib.Path) -> None:
 	mfile_name = music_extractor.name
 	for ft_name, feature in music_extractor:
 		print(f"   {ft_name} ...")
@@ -369,9 +369,4 @@ if __name__ == "__main__":
 		store_music_features(mfe, args.output_path)
 
 	if False:
-		BP()
-
-
-
-
-# TODO: args: --reset --librosa-opts
+		BP() # hush hush little Syntastic
