@@ -12,16 +12,47 @@ from dataclasses import dataclass
 class MFE: # Music Feature Extractor
 
 	source_file: Path # initialized by constructor
-	sample_rate: int = 22050
-	hop_length: int = 512
+	sample_rate_forced: int = None # librosa will read the sample rate from input file
+	#hop_length: int = 512
 	n_mfcc: int = 13
 	n_mels: int = 128
 	fmax: int = 8000
 
+	def __iter__(self):
+		for extractor_method in [
+			"mfcc",
+			"mfcc_delta",
+			"mfcc_beat_delta",
+			"chromagram_stft",
+			"chromagram_cqt",
+			"chromagram_cens",
+			"spectrogram_mel",
+			"spectrogram_pcen",
+			"spectrogram_magphase",
+			"spectrogram_harmonic",
+			"spectrogram_percussive",
+			"tempogram_autocorrelated",
+			"tempogram_fourier"
+		]:
+			yield extractor_method, getattr(self, extractor_method)
+			#del self.__dict__[v] # to reduce memory footprint
+
+
 	@cached_property
+	def load(self):
+		return librosa.load(self.source_file, sr=self.sample_rate_forced)
+
+	@property
 	def signal(self):
-		# elm [1] is auto detected sample rate with 'sr=None' param
-		return librosa.load( self.source_file, sr=self.sample_rate )[0]
+		return self.load[0]
+
+	@property
+	def sample_rate(self):
+		return self.load[1]
+
+	@cached_property
+	def hop_length(self):
+		return librosa.time_to_samples(1./200, sr=self.sample_rate)
 
 	@cached_property
 	def signal_harmonic_percussive(self):
@@ -47,18 +78,18 @@ class MFE: # Music Feature Extractor
 	def decompose_percussive(self):
 		return self.decompose_harmonic_percussive[1]
 
-	@property
+	@cached_property
 	def beat_track(self):
 		return librosa.beat.beat_track(
 			y=self.signal_percussive,
 			sr=self.sample_rate
-		)#[1] # elm [0] is tempo
+		)
 
-	@cached_property
+	@property
 	def beat_tempo(self):
 		return self.beat_track[0]
 
-	@cached_property
+	@property
 	def beat_frames(self):
 		return self.beat_track[1]
 
