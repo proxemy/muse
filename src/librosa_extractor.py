@@ -197,9 +197,3 @@ class MFE: # Music Feature Extractor
 			onset_envelope=self.onset_strength,
 			hop_length=self.hop_length
 		))
-
-
-
-# TMP for local tests
-if __name__ == "__main__":
-	pass
