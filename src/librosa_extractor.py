@@ -182,17 +182,19 @@ class MFE: # Music Feature Extractor
 	@cached_property
 	def tempogram_autocorrelated(self):
 		return np.abs(librosa.feature.tempogram(
-			self.onset_strength,
+			y=self.signal,
 			sr=self.sample_rate,
+			onset_envelope=self.onset_strength,
 			hop_length=self.hop_length,
-			norm=False
+			norm=None
 		))
 
 	@cached_property
 	def tempogram_fourier(self):
 		return np.abs(librosa.feature.fourier_tempogram(
-			self.onset_strength,
+			y=self.signal,
 			sr=self.sample_rate,
+			onset_envelope=self.onset_strength,
 			hop_length=self.hop_length
 		))
 
