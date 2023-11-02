@@ -4,6 +4,7 @@ import librosa
 import numpy as np
 
 from pathlib import Path
+from os.path import basename
 from functools import cached_property
 from dataclasses import dataclass
 
@@ -37,6 +38,9 @@ class MFE: # Music Feature Extractor
 			yield extractor_method, getattr(self, extractor_method)
 			#del self.__dict__[v] # to reduce memory footprint
 
+	@property
+	def source_name(self):
+		return basename(self.source_file)
 
 	@cached_property
 	def load(self):
