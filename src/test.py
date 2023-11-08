@@ -15,6 +15,11 @@ def parse_args(argv) -> ArgumentParser:
 		description='Processes music files to retrieve feature data as images.'
 	)
 
+	# TODO: Add arguments:
+	# * '-d DIR' for globbing input files
+	# * '-r flag' for en/disabling recursive globbing
+	# * '-f FEATURE' for given features to extract instead of all
+
 	ret.add_argument(
 		'-i',
 		dest="input_files",
