@@ -10,7 +10,7 @@ from librosa_extractor import MFE
 
 
 def parse_args(argv) -> ArgumentParser:
-	ret = ArgumentParser(
+	parser = ArgumentParser(
 		prog='Music Feature Extractor',
 		description='Processes music files to retrieve feature data as images.'
 	)
@@ -20,16 +20,16 @@ def parse_args(argv) -> ArgumentParser:
 	# * '-r flag' for en/disabling recursive globbing
 	# * '-f FEATURE' for given features to extract instead of all
 
-	ret.add_argument(
+	parser.add_argument(
 		'-i',
 		dest="input_files",
 		type=Path,
 		action="append",
-		default=[ Path(librosa.example('nutcracker', hq=True)) ],
+		default=[],
 		help= "A single music file to process. Default: librosa.example('nutcracler')."
 	)
 
-	ret.add_argument(
+	parser.add_argument(
 		'-o',
 		dest='out_dir',
 		type=Path,
@@ -38,7 +38,13 @@ def parse_args(argv) -> ArgumentParser:
 		help="Output directory to be created. Every input files gets their music features stored in equally named folders. Default: 'CWD/music_features'"
 	)
 
-	return ret.parse_args(args=argv[1:])
+	args = parser.parse_args(args=argv[1:])
+
+	if not args.input_files:
+		args.input_files = [ Path(librosa.example('nutcracker', hq=True)) ]
+
+	return args
+
 
 def save_plot(feature_data, mfe, out_path: Path) -> None:
 	"""
