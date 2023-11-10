@@ -23,7 +23,7 @@ def parse_args(argv) -> ArgumentParser:
 	parser.add_argument(
 		'-i',
 		dest="input_files",
-		type=Path,
+		type=list,
 		action="append",
 		default=[],
 		help= "A single music file to process. Default: librosa.example('nutcracler')."
@@ -36,6 +36,15 @@ def parse_args(argv) -> ArgumentParser:
 		action='store',
 		default=Path.cwd().joinpath('music_features'),
 		help="Output directory to be created. Every input files gets their music features stored in equally named folders. Default: 'CWD/music_features'"
+	)
+
+	parser.add_argument(
+		'-f', '--feature',
+		dest='extract_features',
+		type=list,
+		action=append,
+		default=[],
+		description='Specify certain features to extract instead of all possible.'
 	)
 
 	args = parser.parse_args(args=argv[1:])
