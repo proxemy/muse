@@ -60,6 +60,9 @@ def parse_args(argv) -> ArgumentParser:
 		args.input_files = [ Path(librosa.example('nutcracker', hq=True)) ]
 
 	# validate given examples
+	for feature in args.extract_features:
+		if not hasattr(MFE, feature):
+			raise ValueError("asd foo")
 
 	return args
 
