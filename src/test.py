@@ -17,8 +17,6 @@ def parse_args(argv) -> ArgumentParser:
 
 	# TODO: Add arguments:
 	# * '-d DIR' for globbing input files
-	# * '-r flag' for en/disabling recursive globbing
-	# * '-f FEATURE' for given features to extract instead of all
 
 	parser.add_argument(
 		'-i',
@@ -39,18 +37,29 @@ def parse_args(argv) -> ArgumentParser:
 	)
 
 	parser.add_argument(
-		'-f', '--feature',
+		'-f',
 		dest='extract_features',
 		type=list,
-		action=append,
-		default=[],
-		description='Specify certain features to extract instead of all possible.'
+		action='append',
+		default=MFE.__ITERABLES__,
+		help='Specify certain features to extract instead of all possible.'
+	)
+
+	parser.add_argument(
+		'-r', '--recursive',
+		dest='recursive_globbing',
+		action='store_true',
+		default=False,
+		help='When a given input directory with "-d" is given, traverse the folder tree to capture all audio files below. Note: The outup directory will not regard sub folders, so duplicate files will overwrite each other.'
 	)
 
 	args = parser.parse_args(args=argv[1:])
 
+	# set default input example
 	if not args.input_files:
 		args.input_files = [ Path(librosa.example('nutcracker', hq=True)) ]
+
+	# validate given examples
 
 	return args
 
