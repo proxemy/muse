@@ -2,9 +2,12 @@
 
 import librosa
 import numpy as np
-from pathlib import Path
+
 from functools import cached_property
 from dataclasses import dataclass
+
+from pathlib import Path
+from typing import ClassVar
 
 
 @dataclass(frozen=True)
@@ -17,22 +20,25 @@ class MFE: # Music Feature Extractor
 	n_mels: int = 128
 	fmax: int = 8000
 
+
+	__ITERABLES__: ClassVar[list] = [
+		"mfcc",
+		"mfcc_delta",
+		"mfcc_beat_delta",
+		"chromagram_stft",
+		"chromagram_cqt",
+		"chromagram_cens",
+		"spectrogram_mel",
+		"spectrogram_pcen",
+		"spectrogram_magphase",
+		"spectrogram_harmonic",
+		"spectrogram_percussive",
+		"tempogram_autocorrelated",
+		"tempogram_fourier"
+	]
+
 	def __iter__(self):
-		for extractor_method in [
-			"mfcc",
-			"mfcc_delta",
-			"mfcc_beat_delta",
-			"chromagram_stft",
-			"chromagram_cqt",
-			"chromagram_cens",
-			"spectrogram_mel",
-			"spectrogram_pcen",
-			"spectrogram_magphase",
-			"spectrogram_harmonic",
-			"spectrogram_percussive",
-			"tempogram_autocorrelated",
-			"tempogram_fourier"
-		]:
+		for extractor_method in self.__ITERABLES__:
 			yield extractor_method, getattr(self, extractor_method)
 			#import gc
 			#gc.collect()
