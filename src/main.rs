@@ -1,7 +1,8 @@
 use gtk::prelude::*;
 use gtk::{glib, Application, ApplicationWindow};
 
-const APP_ID: &str = "TODO: APP_ID";
+
+const APP_ID: &str = env!("CARGO_PKG_NAME");
 
 fn main() -> glib::ExitCode
 {
@@ -17,7 +18,7 @@ fn build_ui(app: &Application)
 {
     let window = ApplicationWindow::builder()
         .application(app)
-        .title("TODO: title macro accesible?")
+        .title(env!("CARGO_PKG_NAME"))
         .build();
 
     window.present();
