@@ -434,6 +434,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "muse-label"
+version = "0.1.0"
+dependencies = [
+ "gtk4",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -717,13 +724,6 @@ dependencies = [
  "serde_spanned",
  "toml_datetime",
  "winnow",
-]
-
-[[package]]
-name = "ttt"
-version = "0.1.0"
-dependencies = [
- "gtk4",
 ]
 
 [[package]]
