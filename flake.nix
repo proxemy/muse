@@ -14,17 +14,11 @@
 
       devShells = forAllSystems (system: {
         default = pkgs.${system}.mkShellNoCC {
-          packages = [
-			pkgs.${system}.cargo
-			pkgs.${system}.rustc
-			pkgs.${system}.gtk4
-			pkgs.${system}.pkg-config
-		  ]
-		  ++ ( with pkgs.${system}.python3Packages; [
+          packages = with pkgs.${system}.python3Packages; [
 			librosa
 			numpy
 			matplotlib
-          ]);
+          ];
         };
       });
     };
