@@ -18,6 +18,7 @@
 			librosa
 			numpy
 			matplotlib
+			tkinter
           ];
         };
       });
