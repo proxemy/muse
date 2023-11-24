@@ -1,8 +1,10 @@
 use gtk::prelude::*;
 use gtk::{glib, Application, ApplicationWindow, Button};
 
+use const_format::formatcp;
 
-const APP_ID: &str = env!("CARGO_PKG_NAME");
+
+const APP_ID: &str = formatcp!("org.gtk_rs.{}", env!("CARGO_PKG_NAME"));
 
 fn main() -> glib::ExitCode
 {
